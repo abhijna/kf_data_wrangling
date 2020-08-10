@@ -1,0 +1,105 @@
+---
+title: "Creating a .pheno File for KidsFirst GWAS data"
+author: "Abhijna Parigi"
+date: "7/22/2020"
+output: html_document
+---
+
+## Let's import a few useful libraries:
+```{r setup, include=FALSE}
+install.packages("dplyr")
+install.packages("splitstackshape")
+library(dplyr)
+library(splitstackshape)
+```
+
+## Import the data and change important variables to characters
+```{r}
+pheno <- read.table(file = "/home/rstudio/kf/metadata/file-table.tsv", sep = '\t', header = TRUE)
+pheno$Biospecimen.ID <- as.character(pheno$Biospecimen.ID)
+pheno$Participants.ID <- as.character(pheno$Participants.ID)
+pheno$Tissue.Type..Source.Text. <- as.character(pheno$Tissue.Type..Source.Text.)
+str(pheno)
+```
+
+## Let's look at the dataset
+```{r}
+head(pheno)
+```
+
+## Separate biosample ids column by the comma
+
+```{r}
+pheno_split_1 <- cSplit(pheno, "Biospecimen.ID", ",")
+pheno_split_2 <- cSplit(pheno_split_1, "Tissue.Type..Source.Text.", ",")
+
+head(pheno_split_2)
+```
+
+## Split and combine 
+
+Split them into two different datasets one with the first biosample ID and first tissue type column and the other with the second of each. Then combine them again using row bind.
+
+``` {r}
+pheno_1  <-  pheno_split_2 %>%
+  select(-Biospecimen.ID_2, -Tissue.Type..Source.Text._2) %>% 
+  rename(Biospecimen.ID = Biospecimen.ID_1) %>% 
+  rename(Tissue.Type = Tissue.Type..Source.Text._1)
+
+pheno_2  <-  pheno_split_2 %>% 
+  select(-Biospecimen.ID_1, -Tissue.Type..Source.Text._1) %>% 
+  rename(Biospecimen.ID = Biospecimen.ID_2) %>% 
+  rename(Tissue.Type = Tissue.Type..Source.Text._2)
+
+pheno <- rbind(pheno_1, pheno_2)
+pheno$File.ID <- NULL
+pheno$Diagnosis..Source.Text. <- NULL
+pheno$File.Size <- NULL
+
+```
+
+
+## Import biospecimen ID list
+Now we import the biospecimen ID list we made earlier. The file lives in the kf/data folder and is called samples.tsv. 
+```{r}
+individuals <- read.table(file = "/home/rstudio/kf/data/samples.tsv", sep = '\t', header = F)
+colnames(individuals) <- "Biospecimen.ID"
+
+final <- distinct(inner_join(x=individuals, y=pheno))
+nrow(final)
+nrow(individuals)
+nrow(pheno)
+```
+
+
+
+## inner join
+Now joining little the table (participants only data) with big table using "File.ID", "Data.Type", "File.Format", "Participants.ID", "Proband", "Family.Id" as the common columns. You make write it out to check if the left join worked out. To do so, delete the # symbol from the first line of this file. 
+
+
+## Export the final .pheno file
+
+```{r}
+pheno_file <- final %>% 
+  mutate(Biospecimen.ID_Again = Biospecimen.ID) %>% 
+  select(Biospecimen.ID, Biospecimen.ID_Again, Tissue.Type)
+
+write.table(pheno_file, file = "/home/rstudio/kf/data/glioma_merged.pheno", row.names=FALSE, col.names=FALSE, sep="\t", na="", quote = FALSE)
+
+```
+
+
+## Manhatten plots:
+```{r}
+install.packages('qqman',  contriburl=contrib.url('http://cran.r-project.org/'))
+require(qqman)
+```
+
+## plotting
+```{r}
+data=read.table("/home/rstudio/kf/data/glioma_merged.assoc", header=TRUE); data=data[!is.na(data$P),]
+
+manhattan(data, p = "P", col = c("blue4", "orange3"),genomewideline = 15, annotatePval = 0.01, chrlabs = c(1:23, "X"), annotateTop=TRUE)
+unad_cutoff_sug
+unad_cutoff_conf
+```
