@@ -60,7 +60,8 @@ pheno$File.Size <- NULL
 
 
 ## Import biospecimen ID list
-Now we import the biospecimen ID list we made earlier. The file lives in the kf/data folder and is called samples.tsv. 
+Now we import the biospecimen ID list we made earlier. The file lives in the kf/data folder and is called samples.tsv
+
 ```{r}
 individuals <- read.table(file = "/home/rstudio/kf/data/samples.tsv", sep = '\t', header = F)
 colnames(individuals) <- "Biospecimen.ID"
@@ -70,7 +71,6 @@ nrow(final)
 nrow(individuals)
 nrow(pheno)
 ```
-
 
 
 ## inner join
@@ -90,12 +90,14 @@ write.table(pheno_file, file = "/home/rstudio/kf/data/glioma_merged.pheno", row.
 
 
 ## Manhatten plots:
+
 ```{r}
 install.packages('qqman',  contriburl=contrib.url('http://cran.r-project.org/'))
 require(qqman)
 ```
 
 ## plotting
+
 ```{r}
 data=read.table("/home/rstudio/kf/data/glioma_merged.assoc", header=TRUE); data=data[!is.na(data$P),]
 
